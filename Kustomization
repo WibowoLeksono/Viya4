@@ -1,0 +1,49 @@
+namespace: {{ NAME-OF-NAMESPACE }} 1
+resources:
+- sas-bases/base
+- sas-bases/overlays/cert-manager-issuer 2
+- sas-bases/overlays/network/networking.k8s.io 3
+- sas-bases/overlays/cas-server
+- sas-bases/overlays/internal-postgres
+# If your deployment contains programming-only offerings only, comment out the next line
+- sas-bases/overlays/internal-elasticsearch
+- sas-bases/overlays/update-checker
+- sas-bases/overlays/cas-server/auto-resources 4
+configurations:
+- sas-bases/overlays/required/kustomizeconfig.yaml
+transformers:
+# If your deployment does not support privileged containers or if your deployment
+# contains programming-only offerings, comment out the next line 5
+- sas-bases/overlays/internal-elasticsearch/sysctl-transformer.yaml
+- sas-bases/overlays/required/transformers.yaml
+- site-config/security/cert-manager-provided-ingress-certificate.yaml 2
+- sas-bases/overlays/cas-server/auto-resources/remove-resources.yaml 4
+# If your deployment contains programming-only offerings only, comment out the next line
+- sas-bases/overlays/internal-elasticsearch/internal-elasticsearch-transformer.yaml
+# Mount information
+# - site-config/{{ DIRECTORY-PATH }}/cas-add-host-mount.yaml
+components:
+- sas-bases/components/security/core/base/full-stack-tls 6
+- sas-bases/components/security/network/networking.k8s.io/ingress/nginx.ingress.kubernetes.io/full-stack-tls 6
+patches:
+- path: site-config/storageclass.yaml 7
+  target:
+    kind: PersistentVolumeClaim
+    annotationSelector: sas.com/component-name in (sas-backup-job,sas-data-quality-services,sas-commonfiles,sas-cas-operator,sas-pyconfig)
+# License information
+# secretGenerator:
+# - name: sas-license
+#   type: sas.com/license
+#   behavior: merge
+#   files:
+#   - SAS_LICENSE=license.jwt
+configMapGenerator:
+- name: ingress-input
+  behavior: merge
+  literals:
+  - INGRESS_HOST={{ NAME-OF-INGRESS-HOST }}
+- name: sas-shared-config
+  behavior: merge
+  literals:
+  - SAS_SERVICES_URL=https://{{ NAME-OF-INGRESS-HOST }}:{{ PORT }} 8
+  # - SAS_URL_EXTERNAL_VIYA={{ EXTERNAL-PROXY-URL }} 9
