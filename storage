@@ -1,0 +1,7 @@
+cat > ~/project/gelocp/site-config/storageclass.yaml <<-EOF
+kind: RWXStorageClass
+metadata:
+  name: wildcard
+spec:
+  storageClassName: sas-azurefile #With sas UID/GID
+EOF
