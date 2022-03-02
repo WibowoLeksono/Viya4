@@ -1,0 +1,20 @@
+cd ~/project/gelocp
+# Apply the "cluster api" configuration in site.yaml (CRDs)
+kubectl apply --selector="sas.com/admin=cluster-api" -f site.yaml
+
+# Wait for Custom Resource Deployment to be deployed
+kubectl wait --for condition=established --timeout=60s -l "sas.com/admin=cluster-api" crd
+
+# Apply the "cluster wide" configuration in site.yaml (Roles, Service Accounts)
+kubectl apply --selector="sas.com/admin=cluster-wide" -f site.yaml
+
+
+#Apply the "cluster local" configuration in site.yaml and delete all the other "cluster local" resources that are not in the file (RoleBindings, ConfigMaps, Secrets, PersistentVolumeClaims, pgcluster.webinfdsvr.sas.com Custom Resource)
+kubectl apply --selector="sas.com/admin=cluster-local" -f site.yaml --prune
+
+# Apply the configuration in manifest.yaml that matches label "sas.com/admin=namespace" and delete all the other resources that are not in the file and match label "sas.com/admin=namespace".
+kubectl apply --selector="sas.com/admin=namespace" -f site.yaml --prune
+
+
+cd ~/project/gelocp
+kubectl -n gel-viya apply -f site.yaml
