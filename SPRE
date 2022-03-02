@@ -1,0 +1,42 @@
+cat <<-EOF >  ~/project/gelocp/site-config/set-compute-workload.yaml
+apiVersion: builtin
+kind: PatchTransformer
+metadata:
+  name: compute-node-selection
+patch: |-
+  - op: add
+    path: /template/spec/nodeSelector
+    value:
+      workload.sas.com/class: compute
+  - op: replace
+    path: /template/spec/tolerations
+    value:
+      - effect: NoSchedule
+        key: workload.sas.com/class
+        operator: Equal
+        value: compute
+target:
+  kind: PodTemplate
+  labelSelector: sas.com/template-intent=sas-launcher
+---
+apiVersion: builtin
+kind: PatchTransformer
+metadata:
+  name: connect-spawner-node-selection
+patch: |-
+  - op: add
+    path: /spec/template/spec/nodeSelector
+    value:
+      workload.sas.com/class: compute
+  - op: replace
+    path: /spec/template/spec/tolerations
+    value:
+      - effect: NoSchedule
+        key: workload.sas.com/class
+        operator: Equal
+        value: compute
+target:
+  name: sas-connect-spawner
+  version: v1
+  kind: Deployment
+EOF
