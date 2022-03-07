@@ -1,0 +1,10 @@
+FSGROUP=$(oc get project viya4 -o jsonpath='{.metadata.annotations.openshift\.io/sa\.scc\.supplemental-groups}' | cut -f1 -d /)
+echo $FSGROUP
+cp sas-bases/examples/security/container-security/update-fsgroup.yaml site-config/patches/update-fsgroup.yaml
+chmod 644 site-config/patches/update-fsgroup.yaml
+sed -i "s|{{ FSGROUP_VALUE }}|$FSGROUP|" site-config/patches/update-fsgroup.yaml
+# check
+head -n 30 site-config/patches/update-fsgroup.yaml
+
+
+- sas-bases/overlays/security/container-security/remove-seccomp-transformer.yaml
