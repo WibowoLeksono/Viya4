@@ -1,0 +1,50 @@
+./yq4 eval '
+    .allowPrivilegeEscalation = true,
+    .allowPrivilegedContainer = true,
+    .runAsUser.type = "RunAsAny"' \
+    ./sas-bases/examples/configure-elasticsearch/internal/openshift/sas-opendistro-scc.yaml > ./site-config/sas-opendistro-scc.yaml
+
+
+# CAS: pick only one of cas-server-scc.yaml or cas-server-scc-host-launch.yaml
+oc apply -f ./sas-bases/examples/cas/configure/cas-server-scc.yaml
+# PostgreSQL
+oc apply -f ./sas-bases/examples/crunchydata/openshift/pgo-backrest-scc.yaml
+oc apply -f ./sas-bases/examples/crunchydata/openshift/pgo-scc.yaml
+# SAS/CONNECT
+oc apply -f ./sas-bases/examples/sas-connect-spawner/openshift/sas-connect-spawner-scc.yaml
+# SPRE
+oc apply -f ./sas-bases/examples/sas-programming-environment/watchdog/sas-watchdog-scc.yaml
+# MAS
+oc apply -f ./sas-bases/overlays/sas-microanalytic-score/service-account/sas-microanalytic-score-scc.yaml
+# ElasticSearch
+oc apply -f ./site-config/sas-opendistro-scc.yaml
+
+
+
+cd ~/project/gelocp/
+NS="gel-viya"
+oc -n ${NS} adm policy add-scc-to-user sas-cas-server -z sas-cas-server
+oc -n ${NS} adm policy add-scc-to-user sas-connect-spawner -z sas-connect-spawner
+oc -n ${NS} adm policy add-scc-to-user pgo -z pgo-pg
+oc -n ${NS} adm policy add-scc-to-user pgo -z pgo-target
+oc -n ${NS} adm policy add-scc-to-user pgo-backrest -z pgo-default
+oc -n ${NS} adm policy add-scc-to-user pgo-backrest -z pgo-backrest
+oc -n ${NS} adm policy add-scc-to-user sas-opendistro -z sas-opendistro
+oc -n ${NS} adm policy add-scc-to-user sas-microanalytic-score -z sas-microanalytic-score
+oc -n ${NS} adm policy add-scc-to-user sas-watchdog -z sas-programming-environment
+oc -n ${NS} adm policy add-scc-to-user hostmount-anyuid -z sas-programming-environment
+
+
+
+cd ~/project/gelocp/
+NS="gel-viya"
+# get the ID from OpenShift
+NS_GROUP_ID=$(oc get project ${NS} -o jsonpath='{.metadata.annotations.openshift\.io/sa\.scc\.supplemental-groups}' | cut -f1 -d / )
+echo "The supplemental group ID for the ${NS} namespace is: ${NS_GROUP_ID}"
+
+sed -e "s|{{ FSGROUP_VALUE }}|${NS_GROUP_ID}|g" \
+    ./sas-bases/examples/security/container-security/update-fsgroup.yaml > ./site-config/security/update-fsgroup.yaml
+
+transformers:
+  - sas-bases/overlays/security/container-security/remove-seccomp-transformer.yaml
+  ... more transformers block lines ...
