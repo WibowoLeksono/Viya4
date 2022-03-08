@@ -1,0 +1,19 @@
+ORDER =9CP5X5
+
+Download Certs
+
+========================
+
+sas-viya-orders -c mirraccess.json certs ${ORDER} -p ~ -n SASViyaV4_${ORDER}_certs
+
+Download tar file
+
+=====================
+
+sas-viya-orders -c mirraccess.json dep ${ORDER} -p ~ stable 2021.2.4 -n SASViyaV4_${ORDER}_stable-2021.2.4-$(date +"%Y-%m-%d")
+
+Populate the registry
+
+===========================
+
+mirrormgr mirror registry --deployment-data SASViyaV4_${ORDER}_certs.zip --workers 16 --insecure -p /mnt/mirror --cadence stable-2021.2.4 --latest --destination abpzzareg.azurecr.io --username abpzzareg --password "x6XB5lx5CefrJ/socqCKtTVFq+=fgc/T"
