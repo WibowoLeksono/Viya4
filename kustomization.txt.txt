@@ -1,0 +1,66 @@
+## kustomization.yaml
+
+```yaml
+cat << EOF > kustomization.yaml
+namespace: viya4
+
+resources:
+- sas-bases/base
+- sas-bases/overlays/network/ingress
+- sas-bases/overlays/cas-server
+- sas-bases/overlays/internal-postgres                         # internal PG
+
+configurations:
+- sas-bases/overlays/required/kustomizeconfig.yaml
+
+transformers:
+- site-config/patches/sas-mount-shared-volume.yaml                                   # mount fileshare to SAS
+- site-config/patches/cas-mount-shared-volume.yaml                                   # mount fileshare to CAS
+- site-config/patches/batch-mount-shared-volume.yaml                                 # mount fileshare to SAS batch
+- site-config/patches/cas-limits.yaml                                                # no CAS nodepool
+- sas-bases/overlays/required/transformers.yaml
+- site-config/patches/acr-mirror.yaml                                                # use mirror
+- site-config/patches/postgres-storage-transformer.yaml                              # reduce Crunchy storage requrests
+- site-config/patches/set-saswork.yaml                                               # map SASWORK to ephemeral disk
+
+components:
+- sas-bases/components/security/core/base/front-door-tls
+- sas-bases/components/security/network/networking.k8s.io/ingress/nginx.ingress.kubernetes.io/front-door-tls
+
+generators:
+- site-config/security/customer-provided-ca-certificates.yaml                        # full + frontdoor TLS (own CA cert)
+- site-config/security/customer-provided-ingress-certificate.yaml                    # full + frontdoor TLS (own cert)
+- site-config/security/customer-provided-merge-sas-certframe-configmap.yaml          # using openssl
+
+patches:
+- path: site-config/patches/rwx-storage-class.yaml
+  target:
+    kind: PersistentVolumeClaim
+    annotationSelector: sas.com/component-name in (sas-backup-job,sas-data-quality-services,sas-commonfiles,sas-cas-operator,sas-pyconfig)
+
+secretGenerator:
+- name: sas-image-pull-secrets
+  behavior: replace
+  type: kubernetes.io/dockerconfigjson
+  files:
+  - .dockerconfigjson=site-config/resources/acr_registry_access.json
+- name: sas-consul-config
+  behavior: merge
+  files:
+  - SITEDEFAULT_CONF=sitedefault.yaml
+
+configMapGenerator:
+- name: input 
+  behavior: merge
+  literals:
+  - IMAGE_REGISTRY=trygghansa.azurecr.io/viya4
+- name: ingress-input
+  behavior: merge
+  literals:
+  - INGRESS_HOST=trygghansa-test.viyacloud.sas.com
+- name: sas-shared-config
+  behavior: merge
+  literals:
+  - SAS_SERVICES_URL=https://trygghansa-test.viyacloud.sas.com
+EOF
+```
