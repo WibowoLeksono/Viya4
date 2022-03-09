@@ -1,0 +1,73 @@
+cat << 'EOF' > site-config/patches/rwx-storage-class.yaml
+kind: RWXStorageClass
+metadata:
+  name: wildcard
+spec:
+  storageClassName: sas-azurefile
+EOF
+
+Registry
+==================================
+
+Repeat this for each new cadence
+
+```shell
+cp sas-bases/examples/mirror/mirror.yaml site-config/patches/acr-mirror.yaml
+chmod 644 site-config/patches/acr-mirror.yaml
+sed -i "s|{{ MIRROR-HOST }}|abpzzareg.azurecr.io|" site-config/patches/acr-mirror.yaml
+
+head -n 20 site-config/patches/acr-mirror.yaml
+```
+Secret
+====================
+Provide access credentials for mirror
+
+```shell
+kubectl create secret docker-registry acrsecret \
+  --dry-run=client \
+  --docker-server=$(cat ~/acr.url) \
+  --docker-username=$(cat ~/acr.user) \
+  --docker-password=$(cat ~/acr.passwd) \
+  --output="jsonpath={.data.\.dockerconfigjson}" | base64 --decode > site-config/resources/acr_registry_access.json
+
+  kubectl create secret docker-registry --dry-run=client abpzzareg --docker-server=abpzzareg.azurecr.io \
+    --docker-username=77f4b84d-db00-400a-a8dc-cb18648cd072 \
+    --docker-password=9C~IqbtnKUrN.odB5_RZyTRNym0la.-Qcs \
+
+
+TLS Configuration
+========================================
+
+cat << 'EOF' > site-config/security/customer-provided-merge-sas-certframe-configmap.yaml
+apiVersion: builtin
+kind: ConfigMapGenerator
+metadata:
+  name: sas-certframe-user-config
+behavior: merge
+literals:
+- SAS_CERTIFICATE_GENERATOR=openssl
+EOF
+    --output="jsonpath={.data.\.dockerconfigjson}" | base64 --decode > site-config/resources/acr_registry_access.json
+
+
+
+# add server cert and key as secret
+cat << EOF > site-config/security/customer-provided-ingress-certificate.yaml
+---
+apiVersion: builtin
+kind: SecretGenerator
+metadata:
+  name: sas-ingress-certificate
+files:
+  - tls.crt=site-config/security/ingress-server-cert.pem
+  - tls.key=site-config/security/ingress-server.key
+type: "kubernetes.io/tls"
+EOF
+
+# add ca-cert to truststore list
+cp sas-bases/examples/security/customer-provided-ca-certificates.yaml site-config/security/
+chmod 644 site-config/security/customer-provided-ca-certificates.yaml
+
+sed -i "s|{{ CA_CERTIFICATE_FILE_NAME }}|site-config/security/cacerts/ingress-server-cacerts.pem|" site-config/security/customer-provided-ca-certificates.yaml
+```
+
