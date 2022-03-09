@@ -1,0 +1,34 @@
+cat << EOF > ~/sas-$AZ_FILE_SHARE-pv-pvc.yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-shared-data
+  namespace: viya4
+spec:
+  capacity:
+    storage: 1024Gi
+  accessModes:
+    - ReadWriteMany
+  claimRef:
+    namespace: viya4
+    name: pvc-shared-data
+  storageClassName: azure-shared-storage
+  azureFile:
+    secretName: $AZ_STOR_ACCT-secret
+    shareName: $AZ_FILE_SHARE
+    secretNamespace: viya4
+    readOnly: false
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-shared-data
+  namespace: viya4
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: azure-shared-storage
+  resources:
+    requests:
+      storage: 1024Gi
+EOF
