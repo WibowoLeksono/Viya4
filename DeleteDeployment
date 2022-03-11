@@ -1,0 +1,21 @@
+kubectl -n viya4 delete deployments --all
+
+
+
+kubectl -n viya4 delete sts --all
+
+
+
+kubectl -n viya4 delete job --all
+
+
+
+kubectl -n viya4 delete pods --all
+
+
+
+kubectl -n viya4 delete services --all
+
+
+
+kubectl -n viya4 delete persistentvolumeclaims --all
