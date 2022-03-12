@@ -1,0 +1,9 @@
+
+kubectl wait -n name-of-namespace \
+--for=condition=ready pod \
+--selector="app.kubernetes.io/name=sas-readiness" \
+--timeout=1800s
+
+
+kubectl logs -n name-of-namespace --selector="app.kubernetes.io/name=sas-readiness"
+
