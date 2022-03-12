@@ -1,0 +1,1 @@
+watch 'kubectl get po -n viya4-test1 | grep "consul\|rabbit\|crunchy\|data-server\|cas-server\|logon\|authorization\|configuration\|opendistro\|Pending" | grep -v Completed'
